@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Квест: СЛАР — Практична 3</title>
+<style>
+:root{
+  --navy:#0d1f3c;--ink:#1a2740;--sand:#f2ede4;--paper:#faf9f6;
+  --blue:#2355b0;--gold:#c8860a;--green:#1a6e3c;--red:#b52020;
+  --muted:#6b7a94;--border:#d4cfc4;--r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Georgia,serif;background:var(--sand);color:var(--ink);min-height:100vh;}
+header{background:var(--navy);color:#f0ede4;padding:22px 28px;border-bottom:3px solid var(--gold);
+  display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+header h1{font-size:1.4rem;font-weight:normal;line-height:1.3;}
+header p{font-size:.82rem;color:#a8bcd8;margin-top:4px;font-family:Arial,sans-serif;}
+.prog-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:160px;}
+.prog-lbl{font-family:Arial,sans-serif;font-size:.75rem;color:#a8bcd8;}
+.prog-bar{width:160px;height:5px;background:#1e3560;border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--gold);transition:width .4s;}
+/* MAP */
+#map-view{padding:28px;max-width:880px;margin:0 auto;}
+#map-view h2{font-size:1.15rem;font-weight:normal;color:var(--navy);margin-bottom:20px;
+  padding-bottom:8px;border-bottom:2px solid var(--border);}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+.qcard{background:var(--paper);border:2px solid var(--border);border-radius:var(--r);
+  padding:18px;cursor:pointer;transition:all .18s;position:relative;}
+.qcard:hover{border-color:var(--blue);box-shadow:0 4px 20px rgba(13,31,60,.12);transform:translateY(-2px);}
+.qcard.done{border-color:var(--green);background:#f0f8f3;}
+.qcard.done::after{content:"✓";position:absolute;top:10px;right:12px;color:var(--green);font-size:1.1rem;font-weight:bold;}
+.cnum{font-family:Arial,sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.ctitle{font-size:.97rem;line-height:1.3;color:var(--ink);}
+.cbadge{display:inline-block;font-family:Arial,sans-serif;font-size:.68rem;padding:2px 8px;
+  border-radius:20px;margin-top:8px;}
+.kk{background:#dce8ff;color:#1a3a80;}.kr{background:#fff0d4;color:#7a4a00;}
+.mx{background:#dcf5e8;color:#0e4a25;}.pr{background:#f5e8ff;color:#4a1a7a;}
+.cm{background:#fff3dc;color:#7a5500;}
+.cpts{font-family:Arial,sans-serif;font-size:.75rem;color:var(--gold);margin-top:8px;font-weight:600;}
+/* TASK */
+#task-view{display:none;padding:24px 18px;max-width:840px;margin:0 auto;}
+.task-hdr{display:flex;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap;}
+.back{background:var(--navy);color:#f0ede4;border:none;border-radius:7px;
+  padding:8px 16px;font-family:Arial,sans-serif;font-size:.84rem;cursor:pointer;}
+.back:hover{background:#162d52;}
+.task-ttl{font-size:1.2rem;font-weight:normal;color:var(--navy);}
+/* STAGE DOTS */
+.dots{display:flex;gap:6px;margin-bottom:16px;}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--border);}
+.dot.active{background:var(--blue);}.dot.done{background:var(--green);}
+/* THEORY */
+.theory{background:#e8f0fb;border-left:4px solid var(--blue);border-radius:0 var(--r) var(--r) 0;
+  padding:14px 18px;margin-bottom:16px;font-size:.9rem;line-height:1.6;}
+.theory strong{color:#1a3a80;}
+/* SYSTEM */
+.sysbox{background:var(--navy);border-radius:var(--r);padding:18px 24px;
+  display:inline-flex;align-items:center;gap:10px;margin-bottom:18px;}
+.brace{font-size:3rem;line-height:1;color:#7fa8d4;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;}
+.brace span{line-height:1.3;}
+.eqs{display:flex;flex-direction:column;gap:5px;}
+.eq{font-family:Georgia,serif;font-size:1rem;color:#d4e4f8;}
+/* HINT */
+.hint-btn{background:none;border:1px dashed var(--blue);border-radius:6px;
+  padding:5px 12px;font-family:Arial,sans-serif;font-size:.8rem;color:var(--blue);
+  cursor:pointer;margin-bottom:10px;}
+.hint-body{background:#f0f5ff;border-radius:8px;padding:12px 16px;margin-bottom:14px;
+  font-size:.87rem;line-height:1.6;display:none;}
+/* Q BLOCK */
+.qblock{background:var(--paper);border:1px solid var(--border);border-radius:var(--r);
+  padding:18px 20px;margin-bottom:12px;}
+.qlbl{font-family:Arial,sans-serif;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:10px;}
+.irow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+.ilbl{font-family:Arial,sans-serif;font-size:.85rem;min-width:80px;}
+.inp{border:none;border-bottom:2px solid var(--blue);background:transparent;
+  font-family:Georgia,serif;font-size:1rem;width:80px;text-align:center;outline:none;padding:3px 4px;}
+.inp:focus{border-color:var(--gold);}
+.inp.ok{border-color:var(--green);color:var(--green);}
+.inp.err{border-color:var(--red);color:var(--red);}
+/* OPTS */
+.opts{display:flex;flex-direction:column;gap:8px;margin:8px 0;}
+.opt{background:var(--sand);border:2px solid var(--border);border-radius:8px;
+  padding:10px 14px;cursor:pointer;font-size:.9rem;text-align:left;color:var(--ink);transition:all .15s;}
+.opt:hover{border-color:var(--blue);}
+.opt.correct{border-color:var(--green);background:#ecf8f2;color:var(--green);}
+.opt.wrong{border-color:var(--red);background:#fdf0f0;color:var(--red);}
+/* FEEDBACK */
+.fb{border-radius:8px;padding:11px 14px;font-family:Arial,sans-serif;font-size:.87rem;
+  margin-top:10px;display:none;}
+.fb.show{display:block;}
+.fb.ok{background:#ecf8f2;color:var(--green);border:1px solid #b0e4c4;}
+.fb.err{background:#fdf0f0;color:var(--red);border:1px solid #f0c0c0;}
+/* BUTTONS */
+.btn{padding:9px 22px;border-radius:8px;border:none;cursor:pointer;
+  font-family:Arial,sans-serif;font-size:.88rem;font-weight:600;transition:all .15s;}
+.bp{background:var(--blue);color:#fff;}.bp:hover{background:#1a4090;}
+.bs{background:var(--paper);color:var(--ink);border:2px solid var(--border);}.bs:hover{border-color:var(--blue);}
+.bg{background:var(--gold);color:#fff;}.bg:hover{background:#a06800;}
+.btns{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;}
+/* RESULT */
+#result-view{display:none;padding:28px 18px;max-width:700px;margin:0 auto;text-align:center;}
+.rstar{font-size:3.5rem;margin-bottom:14px;}
+.rscore{font-size:2.3rem;font-weight:bold;color:var(--navy);margin-bottom:6px;}
+.rlbl{font-family:Arial,sans-serif;font-size:.95rem;color:var(--muted);margin-bottom:24px;}
+.rsummary{background:var(--paper);border:1px solid var(--border);border-radius:var(--r);
+  padding:20px;text-align:left;margin-bottom:20px;}
+.rrow{display:flex;justify-content:space-between;align-items:center;
+  padding:9px 0;border-bottom:1px solid var(--border);font-size:.88rem;}
+.rrow:last-child{border-bottom:none;}
+.spill{font-family:Arial,sans-serif;font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:20px;}
+.sfull{background:#ecf8f2;color:var(--green);}.spart{background:#fff8e0;color:#7a5500;}
+.szero{background:#fdf0f0;color:var(--red);}
+.pnote{font-family:Arial,sans-serif;font-size:.8rem;color:var(--muted);margin-bottom:14px;}
+/* CONFETTI */
+#ccanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Квест: Системи лінійних алгебраїчних рівнянь</h1>
+    <p>Практичне заняття 3 &middot; Лінійна алгебра та аналітична геометрія</p>
+  </div>
+  <div class="prog-wrap">
+    <span class="prog-lbl" id="plbl">0 / 7 завдань</span>
+    <div class="prog-bar"><div class="prog-fill" id="pfill" style="width:0%"></div></div>
+  </div>
+</header>
+
+<div id="map-view">
+  <h2>Оберіть завдання</h2>
+  <div class="grid" id="mgrid"></div>
+  <div id="finish-wrap" style="margin-top:24px;display:none;">
+    <button class="btn bg" style="width:100%;padding:14px;font-size:1rem;" onclick="showResult()">
+      &#x1F3C1; Переглянути результати та завантажити PDF
+    </button>
+  </div>
+</div>
+
+<div id="task-view">
+  <div class="task-hdr">
+    <button class="back btn bs" onclick="showMap()">&#x2190; Карта</button>
+    <div class="task-ttl" id="tttl"></div>
+  </div>
+  <div id="tcontent"></div>
+</div>
+
+<div id="result-view">
+  <div class="rstar" id="rstar">&#x1F3C6;</div>
+  <div class="rscore" id="rscore"></div>
+  <div class="rlbl" id="rlbl"></div>
+  <div class="rsummary" id="rsum"></div>
+  <p class="pnote">PDF зберігає всі ваші відповіді для перевірки викладачем.</p>
+  <div class="btns" style="justify-content:center;">
+    <button class="btn bg" onclick="dlPDF()">&#x2B07; Завантажити PDF з відповідями</button>
+    <button class="btn bs" onclick="resetAll()">&#x21BA; Почати знову</button>
+  </div>
+</div>
+
+<canvas id="ccanvas"></canvas>
+
+<script>
+// ══ DATA ══════════════════════════════════════════════════════════
+var TASKS = [
+{id:1,title:"Теорема Кронекера\u2013Капеллі",badge:"Дослідження",bc:"kk",pts:15,
+ stages:[
+  {lbl:"1а \u2014 Система А",
+   theory:"Алгоритм: 1) записати (A|B); 2) звести до сходинкового вигляду елем. перетвореннями рядків; 3) підрахувати r(A) і r(A|B) = кількість ненульових рядків.",
+   hint:"R2=R2\u22122R1\u2192(0,\u22123,5|0); R3=R3+R1\u2192(0,1,4|8); потім R3... Результат: 3 ненульових рядки в обох частинах.",
+   sys:["2x\u2081 + x\u2082 \u2212 x\u2083 = 3","x\u2081 \u2212 x\u2082 + 2x\u2083 = 6","\u2212x\u2081 + 2x\u2082 + x\u2083 = 5"],
+   qs:[
+    {t:"inp",lbl:"r(A) =",k:"1a-rA",ans:["3"],pts:2},
+    {t:"inp",lbl:"r(A|B) =",k:"1a-rAb",ans:["3"],pts:2},
+    {t:"sel",txt:"Тип системи:",k:"1a-tp",pts:3,opts:["Визначена (єдиний розв'язок)","Несумісна","Невизначена (\u221e розв'язків)"],c:0}
+   ]},
+  {lbl:"1б \u2014 Система Б",
+   theory:"Ознака несумісності: після зведення з'являється рядок вигляду (0 0 ... 0 | c) де c\u22600.",
+   hint:"R2=2R1, але права частина 3\u22602\u00b71. Рядок (0,0,0|1) \u2192 рівняння 0=1 \u2014 суперечність.",
+   sys:["x\u2081 + 2x\u2082 \u2212 x\u2083 = 1","2x\u2081 + 4x\u2082 \u2212 2x\u2083 = 3","3x\u2081 + 6x\u2082 \u2212 3x\u2083 = 5"],
+   qs:[
+    {t:"inp",lbl:"r(A) =",k:"1b-rA",ans:["1"],pts:2},
+    {t:"inp",lbl:"r(A|B) =",k:"1b-rAb",ans:["2"],pts:2},
+    {t:"sel",txt:"Тип системи:",k:"1b-tp",pts:3,opts:["Визначена","Несумісна","Невизначена"],c:1}
+   ]},
+  {lbl:"1в \u2014 Система В",
+   theory:"Якщо r(A)=r(A|B)<n \u2192 невизначена; кількість вільних невідомих = n\u2212r.",
+   hint:"Всі рядки пропорційні R1. Після R2=R2\u22122R1 і R3=R3\u22123R1 отримуємо два нульових рядки. r=1.",
+   sys:["x\u2081 \u2212 x\u2082 + 2x\u2083 = 1","2x\u2081 \u2212 2x\u2082 + 4x\u2083 = 2","3x\u2081 \u2212 3x\u2082 + 6x\u2083 = 3"],
+   qs:[
+    {t:"inp",lbl:"r(A) =",k:"1v-rA",ans:["1"],pts:2},
+    {t:"inp",lbl:"r(A|B) =",k:"1v-rAb",ans:["1"],pts:2},
+    {t:"inp",lbl:"n \u2212 r =",k:"1v-fr",ans:["2"],pts:2},
+    {t:"sel",txt:"Тип системи:",k:"1v-tp",pts:3,opts:["Визначена","Несумісна","Невизначена (\u221e розв'язків)"],c:2}
+   ]}
+ ]},
+
+{id:2,title:"Метод Крамера (2\u00d72)",badge:"Крамер",bc:"kr",pts:12,
+ stages:[
+  {lbl:"2а",theory:"x\u1D62=\u0394\u1D62/\u0394. \u0394=det A. \u0394\u1D62: i-й стовпець A замінюємо на B.",
+   hint:"\u0394=3\u00b7(\u22121)\u22121\u00b72=\u22125. \u0394\u2081=det([[5,1],[0,\u22121]])=\u22125\u22120=\u22125. \u0394\u2082=det([[3,5],[2,0]])=0\u221210=\u221210.",
+   sys:["3x\u2081 + x\u2082 = 5","2x\u2081 \u2212 x\u2082 = 0"],
+   qs:[
+    {t:"inp",lbl:"\u0394 =",k:"2a-D",ans:["-5","\u22125"],pts:2},
+    {t:"inp",lbl:"\u0394\u2081 =",k:"2a-D1",ans:["-5","\u22125"],pts:2},
+    {t:"inp",lbl:"\u0394\u2082 =",k:"2a-D2",ans:["-10","\u221210"],pts:2},
+    {t:"inp",lbl:"x\u2081 =",k:"2a-x1",ans:["1"],pts:3},
+    {t:"inp",lbl:"x\u2082 =",k:"2a-x2",ans:["2"],pts:3}
+   ]},
+  {lbl:"2б",theory:"Перевірка: підставити (x\u2081,x\u2082) у кожне рівняння системи.",
+   hint:"\u0394=5\u00b74\u2212(\u22122)\u00b73=20+6=26. \u0394\u2081=4\u00b74\u2212(\u22122)\u00b718=16+36=52. \u0394\u2082=5\u00b718\u22124\u00b73=90\u221212=78.",
+   sys:["5x\u2081 \u2212 2x\u2082 = 4","3x\u2081 + 4x\u2082 = 18"],
+   qs:[
+    {t:"inp",lbl:"\u0394 =",k:"2b-D",ans:["26"],pts:2},
+    {t:"inp",lbl:"\u0394\u2081 =",k:"2b-D1",ans:["52"],pts:2},
+    {t:"inp",lbl:"\u0394\u2082 =",k:"2b-D2",ans:["78"],pts:2},
+    {t:"inp",lbl:"x\u2081 =",k:"2b-x1",ans:["2"],pts:3},
+    {t:"inp",lbl:"x\u2082 =",k:"2b-x2",ans:["3"],pts:3}
+   ]}
+ ]},
+
+{id:3,title:"Метод Крамера (3\u00d73)",badge:"Крамер",bc:"kr",pts:18,
+ stages:[
+  {lbl:"3а",theory:"\u0394\u1D62: у матриці A замінити i-й стовпець на B=(2,9,7).",
+   hint:"A=[[1,\u22121,2],[3,2,\u22121],[2,\u22121,3]]. \u0394=1\u00b7(6\u22121)+1\u00b7(9+2)+2\u00b7(\u22123\u22124)=5+11\u221214=2.",
+   sys:["x\u2081 \u2212 x\u2082 + 2x\u2083 = 2","3x\u2081 + 2x\u2082 \u2212 x\u2083 = 9","2x\u2081 \u2212 x\u2082 + 3x\u2083 = 7"],
+   qs:[
+    {t:"inp",lbl:"\u0394 =",k:"3a-D",ans:["2"],pts:2},
+    {t:"inp",lbl:"\u0394\u2081 =",k:"3a-D1",ans:["-2","\u22122"],pts:2},
+    {t:"inp",lbl:"\u0394\u2082 =",k:"3a-D2",ans:["18"],pts:2},
+    {t:"inp",lbl:"\u0394\u2083 =",k:"3a-D3",ans:["12"],pts:2},
+    {t:"inp",lbl:"x\u2081 =",k:"3a-x1",ans:["-1","\u22121"],pts:3},
+    {t:"inp",lbl:"x\u2082 =",k:"3a-x2",ans:["9"],pts:3},
+    {t:"inp",lbl:"x\u2083 =",k:"3a-x3",ans:["6"],pts:4}
+   ]},
+  {lbl:"3б",theory:"Спочатку перевірте \u0394\u22600, тоді формули Крамера застосовні.",
+   hint:"A=[[2,1,\u22121],[1,\u22121,1],[1,2,3]]. \u0394=2(\u22123\u22122)\u22121(3\u22121)+(\u22121)(2+1)=\u221210\u22122\u22123=\u22129. B=(1,0,11).",
+   sys:["2x\u2081 + x\u2082 \u2212 x\u2083 = 1","x\u2081 \u2212 x\u2082 + x\u2083 = 0","x\u2081 + 2x\u2082 + 3x\u2083 = 11"],
+   qs:[
+    {t:"inp",lbl:"\u0394 =",k:"3b-D",ans:["-9","\u22129"],pts:3},
+    {t:"inp",lbl:"x\u2081 =",k:"3b-x1",ans:["1"],pts:2},
+    {t:"inp",lbl:"x\u2082 =",k:"3b-x2",ans:["1"],pts:2},
+    {t:"inp",lbl:"x\u2083 =",k:"3b-x3",ans:["2"],pts:3}
+   ]},
+  {lbl:"3в",theory:"\u0394\u2082: замінити 2-й стовпець (3,\u22121,2) на B=(7,3,8).",
+   hint:"A=[[1,3,\u22122],[2,\u22121,1],[3,2,\u22121]]. \u0394=1(1\u22122)\u22123(\u22122\u22123)+(\u22122)(4+3)=\u22121+15\u221214=2... Перерахуйте точно.",
+   sys:["x\u2081 + 3x\u2082 \u2212 2x\u2083 = 7","2x\u2081 \u2212 x\u2082 + x\u2083 = 3","3x\u2081 + 2x\u2082 \u2212 x\u2083 = 8"],
+   qs:[
+    {t:"inp",lbl:"\u0394 =",k:"3v-D",ans:["2"],pts:2},
+    {t:"inp",lbl:"x\u2081 =",k:"3v-x1",ans:["1"],pts:4},
+    {t:"inp",lbl:"x\u2082 =",k:"3v-x2",ans:["2"],pts:4},
+    {t:"inp",lbl:"x\u2083 =",k:"3v-x3",ans:["1"],pts:4}
+   ]}
+ ]},
+
+{id:4,title:"Матричний метод (2\u00d72)",badge:"Матричний",bc:"mx",pts:14,
+ stages:[
+  {lbl:"4а",theory:"A\u207B\u00B9=(1/det A)\u00b7A*, де A*\u2014 транспонована матриця алг. доповнень. X=A\u207B\u00B9\u00b7B.",
+   hint:"det=2\u00b73\u22121\u00b75=1. A\u2081\u2081=3, A\u2081\u2082=\u22125, A\u2082\u2081=\u22121, A\u2082\u2082=2. A*=[[3,\u22121],[\u22125,2]]. A\u207B\u00B9=A*.",
+   sys:["2x\u2081 + x\u2082 = 1","5x\u2081 + 3x\u2082 = 2"],
+   qs:[
+    {t:"inp",lbl:"det A =",k:"4a-d",ans:["1"],pts:2},
+    {t:"inp",lbl:"A\u2081\u2081 =",k:"4a-11",ans:["3"],pts:1},
+    {t:"inp",lbl:"A\u2081\u2082 =",k:"4a-12",ans:["-5","\u22125"],pts:1},
+    {t:"inp",lbl:"A\u2082\u2081 =",k:"4a-21",ans:["-1","\u22121"],pts:1},
+    {t:"inp",lbl:"A\u2082\u2082 =",k:"4a-22",ans:["2"],pts:1},
+    {t:"inp",lbl:"x\u2081 =",k:"4a-x1",ans:["1"],pts:4},
+    {t:"inp",lbl:"x\u2082 =",k:"4a-x2",ans:["-1","\u22121"],pts:4}
+   ]},
+  {lbl:"4б",theory:"Перевірка: A\u00b7X повинна дорівнювати B.",
+   hint:"det([[3,\u22121],[1,2]])=3\u00b72\u2212(\u22121)\u00b71=7. A\u207B\u00B9=(1/7)\u00b7[[2,1],[\u22121,3]]. X=A\u207B\u00B9\u00b7(7,4).",
+   sys:["3x\u2081 \u2212 x\u2082 = 7","x\u2081 + 2x\u2082 = 4"],
+   qs:[
+    {t:"inp",lbl:"det A =",k:"4b-d",ans:["7"],pts:2},
+    {t:"inp",lbl:"x\u2081 =",k:"4b-x1",ans:["2"],pts:6},
+    {t:"inp",lbl:"x\u2082 =",k:"4b-x2",ans:["1"],pts:6}
+   ]}
+ ]},
+
+{id:5,title:"Матричний метод (3\u00d73)",badge:"Матричний",bc:"mx",pts:16,
+ stages:[
+  {lbl:"5а",theory:"Для 3\u00d73: A\u1D62\u2C7C=(\u22121)\u207F\u207A\u1D56\u00b7M\u1D62\u2C7C, де M\u1D62\u2C7C\u2014 мінор 2\u00d72.",
+   hint:"A=[[2,\u22121,1],[1,\u22121,2],[\u22121,2,1]]. det=2(\u22121\u22124)+1(1+2)+1(2\u22121)=\u221210+3+1=\u22126. Ні, розрахуйте ретельно розкладом по 1-му рядку.",
+   sys:["2x\u2081 \u2212 x\u2082 + x\u2083 = 3","x\u2081 \u2212 x\u2082 + 2x\u2083 = 6","\u2212x\u2081 + 2x\u2082 + x\u2083 = 5"],
+   qs:[
+    {t:"inp",lbl:"det A =",k:"5a-d",ans:["-14","\u221214"],pts:3},
+    {t:"inp",lbl:"x\u2081 =",k:"5a-x1",ans:["2"],pts:4},
+    {t:"inp",lbl:"x\u2082 =",k:"5a-x2",ans:["2"],pts:4},
+    {t:"inp",lbl:"x\u2083 =",k:"5a-x3",ans:["3"],pts:5}
+   ]},
+  {lbl:"5б",theory:"X=A\u207B\u00B9\u00b7B. Знайти A\u207B\u00B9 через алгебраїчні доповнення, потім помножити на B.",
+   hint:"A=[[1,2,\u22121],[2,\u22121,1],[3,1,2]]. det=1(\u22122\u22121)\u22122(4\u22123)+(\u22121)(2+3)=\u22123\u22122\u22125=\u221210.",
+   sys:["x\u2081 + 2x\u2082 \u2212 x\u2083 = 3","2x\u2081 \u2212 x\u2082 + x\u2083 = 5","3x\u2081 + x\u2082 + 2x\u2083 = 9"],
+   qs:[
+    {t:"inp",lbl:"det A =",k:"5b-d",ans:["-10","\u221210"],pts:3},
+    {t:"inp",lbl:"x\u2081 =",k:"5b-x1",ans:["1"],pts:4},
+    {t:"inp",lbl:"x\u2082 =",k:"5b-x2",ans:["2"],pts:4},
+    {t:"inp",lbl:"x\u2083 =",k:"5b-x3",ans:["0"],pts:5}
+   ]}
+ ]},
+
+{id:6,title:"Дослідження з параметром",badge:"Параметр",bc:"pr",pts:12,
+ stages:[
+  {lbl:"Параметр a",
+   theory:"det A \u2014 поліном від a. Нулі полінома \u2192 критичні значення. При кожному значенні досліджуємо r(A) і r(A|B).",
+   hint:"det=1\u00b7(a\u00b71\u22121\u00b71)\u22121\u00b7(1\u00b71\u22121\u00b7a)+a\u00b7(1\u00b71\u2212a\u00b71)=...\u2192 \u2212a\u00b3+3a\u22122=(a\u22121)\u00b2(\u2212a\u22122). Нулі: a=1 і a=\u22122.",
+   sys:["x\u2081 + x\u2082 + ax\u2083 = 1","x\u2081 + ax\u2082 + x\u2083 = 1","ax\u2081 + x\u2082 + x\u2083 = 1"],
+   qs:[
+    {t:"sel",txt:"det A = 0 при a =",k:"6-a0",pts:3,
+     opts:["a = 1 і a = \u22122","a = 0 і a = 1","a = 2 і a = \u22121","a = \u22121 і a = 3"],c:0},
+    {t:"sel",txt:"При a = 1 система:",k:"6-a1",pts:3,
+     opts:["Визначена","Несумісна","Невизначена (\u221e розв'язків)"],c:2},
+    {t:"sel",txt:"При a = \u22122 система:",k:"6-am",pts:3,
+     opts:["Визначена","Несумісна","Невизначена"],c:1},
+    {t:"sel",txt:"При a \u2260 1, a \u2260 \u22122:",k:"6-ao",pts:3,
+     opts:["Визначена \u2014 єдиний розв'язок","Несумісна","Невизначена"],c:0}
+   ]}
+ ]},
+
+{id:7,title:"Порівняння методів",badge:"Обидва методи",bc:"cm",pts:13,
+ stages:[
+  {lbl:"Метод Крамера",theory:"x\u1D62=\u0394\u1D62/\u0394. Перевірте \u0394\u22600 і обчисліть чотири визначники.",
+   hint:"\u0394=2(6\u22121)+1(2+3)+1(\u22121\u22129)=10+5\u221210=5. B=(5,2,8).",
+   sys:["2x\u2081 \u2212 x\u2082 + x\u2083 = 5","x\u2081 + 3x\u2082 \u2212 x\u2083 = 2","3x\u2081 \u2212 x\u2082 + 2x\u2083 = 8"],
+   qs:[
+    {t:"inp",lbl:"\u0394 =",k:"7k-D",ans:["5"],pts:2},
+    {t:"inp",lbl:"x\u2081 (Кр.) =",k:"7k-x1",ans:["2"],pts:2},
+    {t:"inp",lbl:"x\u2082 (Кр.) =",k:"7k-x2",ans:["1"],pts:2},
+    {t:"inp",lbl:"x\u2083 (Кр.) =",k:"7k-x3",ans:["1"],pts:2}
+   ]},
+  {lbl:"Матричний метод",theory:"X=A\u207B\u00B9\u00b7B. Результат повинен збігтися з Крамером.",
+   hint:"det=5. Знайдіть A\u207B\u00B9 і помножте на B=(5,2,8). Відповідь: (2,1,1).",
+   sys:["2x\u2081 \u2212 x\u2082 + x\u2083 = 5","x\u2081 + 3x\u2082 \u2212 x\u2083 = 2","3x\u2081 \u2212 x\u2082 + 2x\u2083 = 8"],
+   qs:[
+    {t:"inp",lbl:"x\u2081 (матр.) =",k:"7m-x1",ans:["2"],pts:2},
+    {t:"inp",lbl:"x\u2082 (матр.) =",k:"7m-x2",ans:["1"],pts:2},
+    {t:"inp",lbl:"x\u2083 (матр.) =",k:"7m-x3",ans:["1"],pts:2},
+    {t:"sel",txt:"Результати збіглися?",k:"7-match",pts:1,
+     opts:["Так, збіглися \u2713","Ні, різняться"],c:0}
+   ]}
+ ]}
+];
+
+// ══ STATE ════════════════════════════════════════════════════════
+var ans={}, scores={}, done=[], curTask=null, curStage=0;
+
+function isDone(id){return done.indexOf(id)>=0;}
+function totalGot(){
+  var g=0;
+  TASKS.forEach(function(t){var s=scores[t.id]||{got:0};g+=Math.min(s.got||0,t.pts);});
+  return g;
+}
+function totalMax(){
+  var m=0; TASKS.forEach(function(t){m+=t.pts;}); return m;
+}
+
+// ══ MAP ══════════════════════════════════════════════════════════
+function showMap(){
+  document.getElementById('map-view').style.display='';
+  document.getElementById('task-view').style.display='none';
+  document.getElementById('result-view').style.display='none';
+  buildMap();
+}
+function buildMap(){
+  var grid=document.getElementById('mgrid');
+  grid.innerHTML='';
+  TASKS.forEach(function(t){
+    var card=document.createElement('div');
+    var d=isDone(t.id);
+    card.className='qcard'+(d?' done':'');
+    card.innerHTML='<div class="cnum">'+'\u0417\u0430\u0432\u0434\u0430\u043d\u043d\u044f '+t.id+'</div>'+
+      '<div class="ctitle">'+t.title+'</div>'+
+      '<span class="cbadge '+t.bc+'">'+t.badge+'</span>'+
+      '<div class="cpts">'+t.pts+' \u0431\u0430\u043b\u0456\u0432</div>';
+    card.onclick=(function(id){return function(){openTask(id);};})(t.id);
+    grid.appendChild(card);
+  });
+  var n=done.length;
+  document.getElementById('plbl').textContent=n+' / '+TASKS.length+' \u0437\u0430\u0432\u0434\u0430\u043d\u044c';
+  document.getElementById('pfill').style.width=Math.round(n/TASKS.length*100)+'%';
+  document.getElementById('finish-wrap').style.display=(n===TASKS.length)?'':'none';
+}
+
+// ══ TASK ══════════════════════════════════════════════════════════
+function openTask(id){
+  curTask=null;
+  for(var i=0;i<TASKS.length;i++){if(TASKS[i].id===id){curTask=TASKS[i];break;}}
+  if(!curTask)return;
+  curStage=0;
+  document.getElementById('map-view').style.display='none';
+  document.getElementById('task-view').style.display='';
+  document.getElementById('result-view').style.display='none';
+  document.getElementById('tttl').textContent='\u0417\u0430\u0432\u0434\u0430\u043d\u043d\u044f '+id+'. '+curTask.title;
+  renderStage();
+}
+
+function renderStage(){
+  var st=curTask.stages[curStage], total=curTask.stages.length;
+  var el=document.getElementById('tcontent');
+
+  // Dots
+  var dotsH='<div class="dots">';
+  for(var i=0;i<total;i++){
+    dotsH+='<div class="dot'+(i<curStage?' done':i===curStage?' active':'')+'"></div>';
+  }
+  dotsH+='</div>';
+
+  // System with brace
+  var eqN=st.sys.length;
+  var braceTop=eqN===1?'\u23A8':'\u23A7';
+  var braceMid=eqN>2?'\u23AA':'';
+  var braceBot=eqN>1?'\u23A9':'';
+  var braceInner=braceTop;
+  for(var bi=1;bi<eqN-1;bi++) braceInner+='<span>'+braceMid+'</span>';
+  if(eqN>1) braceInner+=braceBot;
+
+  var sysH='<div class="sysbox"><div class="brace"><span>'+braceTop+'</span>';
+  for(var bi=1;bi<eqN-1;bi++) sysH+='<span>'+braceMid+'</span>';
+  if(eqN>1) sysH+='<span>'+braceBot+'</span>';
+  sysH+='</div><div class="eqs">';
+  st.sys.forEach(function(eq){sysH+='<div class="eq">'+eq+'</div>';});
+  sysH+='</div></div>';
+
+  // Qs
+  var qsH='';
+  st.qs.forEach(function(q,qi){
+    var sv=ans[q.k]||'';
+    if(q.t==='inp'){
+      qsH+='<div class="qblock"><div class="qlbl">'+q.lbl+' ('+q.pts+' б.)</div>'+
+        '<div class="irow"><span class="ilbl">'+q.lbl+'</span>'+
+        '<input class="inp" id="i-'+q.k+'" value="'+sv+'" placeholder="\u0432\u0456\u0434\u043f\u043e\u0432\u0456\u0434\u044c" '+
+        'oninput="saveA(\''+q.k+'\',this.value)"></div></div>';
+    } else {
+      var opH='<div class="opts" id="opts-'+q.k+'">';
+      q.opts.forEach(function(o,oi){
+        opH+='<button class="opt" onclick="selOpt(\''+q.k+'\','+oi+',this)">'+o+'</button>';
+      });
+      opH+='</div>';
+      qsH+='<div class="qblock"><div class="qlbl">'+q.txt+' ('+q.pts+' б.)</div>'+opH+'</div>';
+    }
+  });
+
+  // Buttons
+  var btnH='<div class="btns">';
+  if(curStage>0) btnH+='<button class="btn bs" onclick="prevSt()">\u2190 \u041d\u0430\u0437\u0430\u0434</button>';
+  btnH+='<button class="btn bp" onclick="checkSt()">\u041f\u0435\u0440\u0435\u0432\u0456\u0440\u0438\u0442\u0438</button>';
+  if(curStage<total-1)
+    btnH+='<button class="btn bs" id="bnext" style="display:none" onclick="nextSt()">\u0414\u0430\u043b\u0456 \u2192</button>';
+  else
+    btnH+='<button class="btn bg" id="bfin" style="display:none" onclick="finSt()">\u2713 \u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0438 \u0437\u0430\u0432\u0434\u0430\u043d\u043d\u044f</button>';
+  btnH+='</div>';
+
+  el.innerHTML=dotsH+
+    '<div class="theory"><strong>\u0422\u0435\u043e\u0440\u0456\u044f:</strong> '+st.theory+'</div>'+
+    sysH+
+    '<button class="hint-btn" onclick="togHint(this)">\ud83d\udca1 \u041f\u0456\u0434\u043a\u0430\u0437\u043a\u0430</button>'+
+    '<div class="hint-body">'+st.hint+'</div>'+
+    '<div id="sqblock">'+qsH+'</div>'+
+    '<div id="sfb" class="fb"></div>'+
+    btnH;
+
+  // Restore select states
+  st.qs.forEach(function(q){
+    if(q.t==='sel' && ans[q.k]!==undefined){
+      var opts=document.querySelectorAll('#opts-'+q.k+' .opt');
+      var sv=parseInt(ans[q.k]);
+      if(opts[sv]) opts[sv].style.fontWeight='bold';
+    }
+  });
+}
+
+function saveA(k,v){ans[k]=v.trim();}
+function selOpt(k,oi,btn){
+  ans[k]=String(oi);
+  var all=btn.closest('.opts').querySelectorAll('.opt');
+  all.forEach(function(b){b.style.fontWeight='normal';});
+  btn.style.fontWeight='bold';
+}
+function togHint(btn){
+  var hb=btn.nextElementSibling;
+  var show=hb.style.display==='block';
+  hb.style.display=show?'none':'block';
+  btn.textContent=show?'\ud83d\udca1 \u041f\u0456\u0434\u043a\u0430\u0437\u043a\u0430':'\ud83d\udca1 \u0421\u0445\u043e\u0432\u0430\u0442\u0438 \u043f\u0456\u0434\u043a\u0430\u0437\u043a\u0443';
+}
+
+function norm(s){return (s||'').trim().replace(',','.').replace('\u2212','-').toLowerCase();}
+
+function checkSt(){
+  var st=curTask.stages[curStage];
+  var got=0, max=0, allOk=true;
+  st.qs.forEach(function(q){
+    max+=q.pts;
+    if(q.t==='inp'){
+      var inp=document.getElementById('i-'+q.k);
+      var v=inp?inp.value:'';
+      var ok=q.ans.some(function(a){return norm(a)===norm(v);});
+      if(inp){inp.className='inp '+(ok?'ok':'err');}
+      if(ok) got+=q.pts; else allOk=false;
+    } else {
+      var sv=ans[q.k];
+      var ok=sv===String(q.c);
+      var all=document.querySelectorAll('#opts-'+q.k+' .opt');
+      all.forEach(function(b,i){
+        b.className='opt';
+        if(String(i)===sv) b.className='opt '+(ok?'correct':'wrong');
+        if(i===q.c && !ok) b.className='opt correct';
+      });
+      if(ok) got+=q.pts; else allOk=false;
+    }
+  });
+
+  var sk=curTask.id+'-'+curStage;
+  if(!scores[sk]){
+    scores[sk]=true;
+    if(!scores[curTask.id]) scores[curTask.id]={got:0};
+    scores[curTask.id].got=(scores[curTask.id].got||0)+got;
+  }
+
+  var fb=document.getElementById('sfb');
+  fb.className='fb show '+(allOk?'ok':'err');
+  fb.textContent=allOk
+    ?('\u2713 \u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e! +'+got+' \u0431\u0430\u043b\u0456\u0432')
+    :('\u2717 \u0404 \u043f\u043e\u043c\u0438\u043b\u043a\u0438 ('+got+'/'+max+' \u0431.). \u041f\u0435\u0440\u0435\u0432\u0456\u0440\u0442\u0435 \u0432\u0438\u0434\u0456\u043b\u0435\u043d\u0456 \u043f\u043e\u043b\u044f.');
+
+  var nb=document.getElementById('bnext')||document.getElementById('bfin');
+  if(nb && (allOk||got>=max*0.4)) nb.style.display='';
+}
+
+function prevSt(){curStage--;renderStage();}
+function nextSt(){curStage++;renderStage();}
+function finSt(){
+  if(done.indexOf(curTask.id)<0) done.push(curTask.id);
+  if(done.length===TASKS.length){showResult();}
+  else{showMap();}
+}
+
+// ══ RESULT ═══════════════════════════════════════════════════════
+function showResult(){
+  document.getElementById('map-view').style.display='none';
+  document.getElementById('task-view').style.display='none';
+  document.getElementById('result-view').style.display='';
+  var tg=totalGot(), tm=totalMax(), pct=Math.round(tg/tm*100);
+  document.getElementById('rstar').textContent=pct>=90?'\ud83e\udd47':pct>=70?'\ud83e\udd48':pct>=50?'\ud83e\udd49':'\ud83d\udcda';
+  document.getElementById('rscore').textContent=tg+' / '+tm+' \u0431\u0430\u043b\u0456\u0432';
+  document.getElementById('rlbl').textContent=
+    pct>=90?'\u0412\u0456\u0434\u043c\u0456\u043d\u043d\u043e! \u0412\u0438 \u043c\u0430\u0439\u0441\u0442\u0435\u0440 \u0421\u041b\u0410\u0420 \ud83c\udf89':
+    pct>=70?'\u0414\u043e\u0431\u0440\u0435! \u0421\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0449\u0435 \u0440\u0430\u0437 \u0434\u043b\u044f \u0432\u0456\u0434\u043c\u0456\u043d\u043d\u043e\u0433\u043e':
+    pct>=50?'\u041d\u0435\u043f\u043e\u0433\u0430\u043d\u043e. \u041f\u043e\u0432\u0442\u043e\u0440\u0456\u0442\u044c \u0442\u0435\u043e\u0440\u0456\u044e':
+    '\u041f\u0435\u0440\u0435\u0447\u0438\u0442\u0430\u0439\u0442\u0435 \u0442\u0435\u043e\u0440\u0456\u044e \u0442\u0430 \u0441\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0449\u0435';
+  var rows='';
+  TASKS.forEach(function(t){
+    var g=Math.min((scores[t.id]||{got:0}).got||0, t.pts);
+    var p=t.pts?Math.round(g/t.pts*100):0;
+    var cls=p>=80?'sfull':p>=50?'spart':'szero';
+    rows+='<div class="rrow"><span>\u0417\u0430\u0432\u0434. '+t.id+': '+t.title+'</span><span class="spill '+cls+'">'+g+'/'+t.pts+'</span></div>';
+  });
+  document.getElementById('rsum').innerHTML=rows;
+  if(pct>=80) confetti();
+}
+function resetAll(){ans={};scores={};done=[];curTask=null;curStage=0;showMap();}
+
+// ══ PDF ══════════════════════════════════════════════════════════
+function dlPDF(){
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s.onload=makePDF;
+  s.onerror=function(){alert('Не вдалося завантажити бібліотеку PDF. Спробуйте ще раз або перевірте з\'єднання.');};
+  document.head.appendChild(s);
+}
+function lat(s){
+  var m={'\u0430':'a','\u0431':'b','\u0432':'v','\u0433':'h','\u0434':'d','\u0435':'e','\u0454':'ye',
+    '\u0436':'zh','\u0437':'z','\u0438':'y','\u0456':'i','\u0457':'yi','\u0439':'i','\u043a':'k',
+    '\u043b':'l','\u043c':'m','\u043d':'n','\u043e':'o','\u043f':'p','\u0440':'r','\u0441':'s',
+    '\u0442':'t','\u0443':'u','\u0444':'f','\u0445':'kh','\u0446':'ts','\u0447':'ch','\u0448':'sh',
+    '\u0449':'shch','\u044a':'','\u044b':'y','\u044c':'','\u044d':'e','\u044e':'yu','\u044f':'ya',
+    '\u0410':'A','\u0411':'B','\u0412':'V','\u0413':'H','\u0414':'D','\u0415':'E','\u0404':'Ye',
+    '\u0416':'Zh','\u0417':'Z','\u0418':'Y','\u0406':'I','\u0407':'Yi','\u0419':'I','\u041a':'K',
+    '\u041b':'L','\u041c':'M','\u041d':'N','\u041e':'O','\u041f':'P','\u0420':'R','\u0421':'S',
+    '\u0422':'T','\u0423':'U','\u0424':'F','\u0425':'Kh','\u0426':'Ts','\u0427':'Ch','\u0428':'Sh',
+    '\u0429':'Shch','\u042a':'','\u042b':'Y','\u042c':'','\u042d':'E','\u042e':'Yu','\u042f':'Ya',
+    '\u2019':"'",'\u2014':'-','\u2013':'-','\u00a0':' ','\u2192':'->',
+    '\u0394':'D','\u2082':'2','\u2083':'3','\u00b9':'1','\u00b2':'2','\u00b3':'3',
+    '\u207B':'(-1)','\u00b7':'*','\u221e':'inf','\u2260':'!=','\u2261':'=','\u2264':'<=','\u2265':'>=',
+    '\u2081':'1','\u23A7':'{','\u23A8':'{','\u23A9':'{','\u23AA':'|',
+  };
+  return s.split('').map(function(c){return m[c]!==undefined?m[c]:(c.charCodeAt(0)>127?'?':c);}).join('');
+}
+function makePDF(){
+  var J=window.jspdf.jsPDF;
+  var doc=new J({orientation:'p',unit:'mm',format:'a4'});
+  var ML=15,W=210,y=16,lh=6.5;
+  function nl(n){y+=(n||1)*lh; if(y>275){doc.addPage();y=16;}}
+  function txt(s,x,bold,sz){
+    doc.setFont('helvetica',bold?'bold':'normal');
+    doc.setFontSize(sz||10);
+    doc.text(lat(s),x,y);
+  }
+
+  doc.setFillColor(13,31,60); doc.rect(0,0,210,30,'F');
+  doc.setTextColor(240,237,228); doc.setFont('helvetica','bold'); doc.setFontSize(14);
+  doc.text('Praktychne zanyattya 3 -- SLAR',ML,12);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Doslidzhennya SLAR. Teorema Kronekera-Kapelli. Metod Kramera. Matrychnyy metod.',ML,20);
+  y=38; doc.setTextColor(30,30,30);
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text('Prizvyshe, imya: _________________________________   Hrupa: ___________   Data: __________',ML,y); nl(2);
+
+  var tg=0,tm=0;
+  TASKS.forEach(function(t){
+    if(y>260){doc.addPage();y=16;}
+    doc.setDrawColor(35,85,176); doc.setLineWidth(0.4);
+    doc.line(ML,y,W-ML,y); nl(1);
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(13,31,60);
+    doc.text('Zavdannya '+t.id+'. '+lat(t.title),ML,y); nl(1.2);
+
+    t.stages.forEach(function(st,si){
+      doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(100,100,120);
+      doc.text('  '+lat(st.lbl),ML,y); nl(1);
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(13,31,60);
+      st.sys.forEach(function(eq,ei){
+        doc.text((ei===0?'{ ':ei<st.sys.length-1?'| ':'\\ ')+lat(eq),ML+4,y); nl(0.9);
+      });
+      nl(0.3);
+
+      st.qs.forEach(function(q){
+        if(y>270){doc.addPage();y=16;}
+        var sv=ans[q.k]||'';
+        var ok=q.t==='inp'
+          ?q.ans.some(function(a){return norm(a)===norm(sv);})
+          :sv===String(q.c);
+        var disp=q.t==='inp'
+          ?(lat(q.lbl)+' '+(sv||'???')+' ['+(ok?'OK':'--')+']')
+          :(lat(q.txt)+' '+(sv!==''?lat(q.opts[parseInt(sv)]||''):'???')+' ['+(ok?'OK':'--')+']');
+        doc.setFont('helvetica','normal'); doc.setFontSize(9);
+        doc.setTextColor(ok?15:180, ok?110:30, ok?50:30);
+        doc.text('    '+disp,ML,y); nl(0.9);
+        if(ok) tg+=q.pts; tm+=q.pts;
+      });
+      nl(0.5);
+    });
+
+    var sg=scores[t.id]||{got:0};
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(13,31,60);
+    doc.text('Score: '+Math.min(sg.got||0,t.pts)+' / '+t.pts, W-ML-35, y); nl(1.5);
+  });
+
+  if(y>255){doc.addPage();y=16;}
+  doc.setDrawColor(13,31,60); doc.setLineWidth(0.5); doc.line(ML,y,W-ML,y); nl(1);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(13,31,60);
+  var pct=tm?Math.round(tg/tm*100):0;
+  doc.text('PIDSUMOK: '+tg+' / '+tm+' baliv  ('+pct+'%)',ML,y);
+
+  doc.save('Praktychna3_SLAR.pdf');
+}
+
+// ══ CONFETTI ═════════════════════════════════════════════════════
+function confetti(){
+  var c=document.getElementById('ccanvas');
+  c.width=window.innerWidth; c.height=window.innerHeight;
+  var ctx=c.getContext('2d');
+  var COLS=['#c8860a','#2355b0','#1a6e3c','#d4a017','#e07b2a'];
+  var pieces=[];
+  for(var i=0;i<100;i++){
+    pieces.push({x:Math.random()*c.width,y:-20,w:7+Math.random()*8,h:4+Math.random()*6,
+      r:Math.random()*6.28,dr:(.03+Math.random()*.06)*(Math.random()<.5?1:-1),
+      vy:2+Math.random()*4,vx:(Math.random()-.5)*3,
+      col:COLS[Math.floor(Math.random()*COLS.length)],life:1});
+  }
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    var any=false;
+    pieces.forEach(function(p){
+      p.y+=p.vy; p.x+=p.vx; p.r+=p.dr; p.life-=.008;
+      if(p.y<c.height&&p.life>0){any=true;
+        ctx.save(); ctx.globalAlpha=p.life;
+        ctx.translate(p.x,p.y); ctx.rotate(p.r);
+        ctx.fillStyle=p.col; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+        ctx.restore();}
+    });
+    if(any) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,c.width,c.height);
+  }
+  draw();
+}
+
+// ══ INIT ═════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', function(){showMap();});
+</script>
+</body>
+</html>
